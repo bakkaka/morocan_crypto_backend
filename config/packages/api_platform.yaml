@@ -1,7 +1,7 @@
+# config/packages/api_platform.yaml
 api_platform:
-    title: Hello API Platform
-    version: 1.0.0
-    defaults:
-        stateless: true
-        cache_headers:
-            vary: ['Content-Type', 'Authorization', 'Origin']
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']  # Ajoutez cette ligne
+    patch_formats:
+        json: ['application/merge-patch+json']
