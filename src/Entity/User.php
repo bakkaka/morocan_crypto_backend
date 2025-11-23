@@ -133,6 +133,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:detail'])]
     private Collection $paymentMethods;
 
+    #[ORM\Column(type: 'integer')]
+private int $loginAttempts = 0;
+
+#[ORM\Column(type: 'datetime', nullable: true)]
+private ?\DateTimeInterface $lockedUntil = null;
+
+#[ORM\Column(type: 'boolean')]
+private bool $isActive = true;
+
+
     public function __construct()
     {
         $this->ads = new ArrayCollection();
@@ -453,4 +463,38 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->fullName . ' (' . $this->email . ')';
     }
+
+    public function getLockedUntil(): ?\DateTimeInterface { return $this->lockedUntil; }
+public function setLockedUntil(?\DateTimeInterface $lockedUntil): static { 
+    $this->lockedUntil = $lockedUntil; 
+    return $this; 
+}
+
+public function isActive(): bool { return $this->isActive; }
+public function setIsActive(bool $isActive): static { 
+    $this->isActive = $isActive; 
+    return $this; 
+}
+
+public function isAccountLocked(): bool
+{
+    if (!$this->lockedUntil) {
+        return false;
+    }
+    return new \DateTime() < $this->lockedUntil;
+}
+
+public function incrementLoginAttempts(): void
+{
+    $this->loginAttempts++;
+    if ($this->loginAttempts >= 5) {
+        $this->lockedUntil = (new \DateTime())->modify('+30 minutes');
+    }
+}
+
+public function resetLoginAttempts(): void
+{
+    $this->loginAttempts = 0;
+    $this->lockedUntil = null;
+}
 }

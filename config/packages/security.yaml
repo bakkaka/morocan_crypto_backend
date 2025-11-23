@@ -1,19 +1,5 @@
 # config/packages/security.yaml
 security:
-    # ⭐⭐ DÉSACTIVEZ TOUS LES FIREWALLS ⭐⭐
-    firewalls:
-        dev:
-            pattern: ^/(_(profiler|wdt)|css|images|js)/
-            security: false
-
-        main:
-            # ⭐⭐ DÉSACTIVÉ - PAS DE SECURITY ⭐⭐
-            security: false
-
-    # ⭐⭐ VIDER L'ACCESS CONTROL ⭐⭐
-    access_control: []
-    
-    # Gardez le reste pour plus tard
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
         App\Entity\User:
@@ -24,3 +10,28 @@ security:
             entity:
                 class: App\Entity\User
                 property: email
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        login:
+            pattern: ^/api/login_check
+            stateless: true
+            json_login:
+                check_path: /api/login_check  # ⚠️ CHANGEZ: api_login_check → /api/login_check
+                username_path: username
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+        api:
+            pattern: ^/api/(?!login_check)
+            stateless: true
+            jwt: ~
+
+    access_control:
+        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
+        - { path: ^/api/users$, methods: [POST], roles: PUBLIC_ACCESS }
+        - { path: ^/api/ads$, methods: [GET], roles: PUBLIC_ACCESS }

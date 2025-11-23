@@ -1,67 +1,76 @@
 <?php
+// src/Controller/AuthController.php
 
 namespace App\Controller;
 
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
+#[Route('/api')]
 class AuthController extends AbstractController
 {
-    #[Route('/login', name: 'app_login', methods: ['POST'])]
-    public function login(#[CurrentUser] ?User $user, Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher): JsonResponse
+    #[Route('/login_check', name: 'api_login', methods: ['POST'])]
+    public function login(#[CurrentUser] ?User $user, JWTTokenManagerInterface $jwtManager): JsonResponse
     {
+        // Cette méthode est appelée automatiquement après une authentification réussie
         if (!$user) {
-            // Si l'authentification a échoué
-            $data = json_decode($request->getContent(), true);
-            $email = $data['email'] ?? '';
-            $password = $data['password'] ?? '';
-            
-            // Vérification manuelle
-            $user = $em->getRepository(User::class)->findOneBy(['email' => $email]);
-            
-            if (!$user || !$passwordHasher->isPasswordValid($user, $password)) {
-                return $this->json([
-                    'message' => 'Email ou mot de passe incorrect',
-                    'error' => 'Invalid credentials'
-                ], 401);
-            }
-            
-            // Si les identifiants sont valides mais que Symfony n'a pas authentifié
-            return $this->json([
-                'message' => 'Login réussi',
-                'user' => [
-                    'id' => $user->getId(),
-                    'email' => $user->getEmail(),
-                    'fullName' => $user->getFullName(),
-                    'roles' => $user->getRoles(),
-                ],
-                // ⭐ Vous pouvez ajouter un token JWT ici plus tard
-            ]);
+            return new JsonResponse([
+                'message' => 'Authentication failed'
+            ], 401);
         }
 
-        // Si l'utilisateur est déjà authentifié par Symfony
-        return $this->json([
-            'message' => 'Login réussi',
+        // Générer le token JWT
+        $token = $jwtManager->create($user);
+
+        return new JsonResponse([
+            'token' => $token,
             'user' => [
                 'id' => $user->getId(),
                 'email' => $user->getEmail(),
                 'fullName' => $user->getFullName(),
+                'phone' => $user->getPhone(),
                 'roles' => $user->getRoles(),
-            ],
+                'isVerified' => $user->isVerified(),
+                'reputation' => $user->getReputation(),
+                'createdAt' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
+            ]
         ]);
     }
 
-    #[Route('/logout', name: 'app_logout', methods: ['POST'])]
+    #[Route('/me', name: 'api_me', methods: ['GET'])]
+    public function me(#[CurrentUser] ?User $user): JsonResponse
+    {
+        if (!$user) {
+            return new JsonResponse([
+                'message' => 'Not authenticated'
+            ], 401);
+        }
+
+        return new JsonResponse([
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'fullName' => $user->getFullName(),
+                'phone' => $user->getPhone(),
+                'roles' => $user->getRoles(),
+                'isVerified' => $user->isVerified(),
+                'reputation' => $user->getReputation(),
+                'createdAt' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
+            ]
+        ]);
+    }
+
+    #[Route('/logout', name: 'api_logout', methods: ['POST'])]
     public function logout(): JsonResponse
     {
-        return $this->json([
-            'message' => 'Déconnexion réussie'
+        // Avec JWT, la déconnexion est côté client (supprimer le token)
+        return new JsonResponse([
+            'message' => 'Logout successful'
         ]);
     }
 }

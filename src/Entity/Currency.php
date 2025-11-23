@@ -44,6 +44,11 @@ class Currency
     #[Assert\NotBlank]
     #[Groups(['currency:read', 'currency:write'])]
     private ?string $name = null; // e.g. Tether USD, Moroccan Dirham
+     
+        #[ORM\Column(length: 10)]
+    #[Assert\Choice(choices: ['crypto', 'fiat'])]
+    #[Groups(['currency:read', 'currency:write', 'ad:detail'])]
+    private string $type = 'crypto';
 
     #[ORM\Column(type: 'integer')]
     #[Groups(['currency:read', 'currency:write'])]
@@ -59,4 +64,6 @@ class Currency
 
     public function getDecimals(): int { return $this->decimals; }
     public function setDecimals(int $d): static { $this->decimals = $d; return $this; }
+    public function getType(): string { return $this->type; }
+    public function setType(string $type): static { $this->type = $type; return $this; }
 }
