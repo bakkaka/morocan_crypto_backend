@@ -18,14 +18,13 @@ security:
 
         login:
             pattern: ^/api/login_check
-            stateless: true
-            json_login:
-                check_path: /api/login_check  # ⚠️ CHANGEZ: api_login_check → /api/login_check
-                username_path: username
-                password_path: password
-                success_handler: lexik_jwt_authentication.handler.authentication_success
-                failure_handler: lexik_jwt_authentication.handler.authentication_failure
-
+    stateless: true
+    json_login:
+        check_path: /api/login_check
+        username_path: email    # ⚠️ CHANGEZ: username → email
+        password_path: password
+        success_handler: lexik_jwt_authentication.handler.authentication_success
+        failure_handler: lexik_jwt_authentication.handler.authentication_failure
         api:
             pattern: ^/api/(?!login_check)
             stateless: true
