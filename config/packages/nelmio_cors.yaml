@@ -1,17 +1,19 @@
+# config/packages/nelmio_cors.yaml
 nelmio_cors:
     defaults:
-        allow_credentials: false
-        allow_headers: ['Content-Type', 'Authorization']
-        expose_headers: []
-        allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+        origin_regex: true
+        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+        allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
+        allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With']
+        expose_headers: ['Link']
         max_age: 3600
+        allow_credentials: true
 
     paths:
         '^/':
-            allow_origin:
-                - 'https://morocan-crypto-web-dashboard-3bbm-5tr6t8uo8.vercel.app'
-                - 'http://localhost:3000'
-            allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-            allow_headers: ['Content-Type', 'Authorization']
+            # utilise les mêmes règles par défaut (null signifie "defaults")
+            allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+            allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
+            allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With']
             max_age: 3600
             allow_credentials: true
