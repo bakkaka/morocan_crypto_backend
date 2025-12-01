@@ -1,24 +1,18 @@
 FROM php:8.2-fpm
 
-# Packages nécessaires
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libicu-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    git
+    git unzip libicu-dev libonig-dev libzip-dev \
+    default-mysql-client default-libmysqlclient-dev \
+    && docker-php-ext-install intl pdo pdo_mysql zip
 
-# Extensions PHP
-RUN docker-php-ext-install intl
-RUN docker-php-ext-install pdo pdo_mysql
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copier le projet dans le container
-COPY . /app
 WORKDIR /app
 
-# Installer Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY . .
 
-RUN composer install --no-interaction --no-dev --optimize-autoloader
+RUN composer install --no-interaction --optimize-autoloader
 
 CMD ["php-fpm"]
