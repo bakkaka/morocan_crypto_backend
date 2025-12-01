@@ -7,12 +7,17 @@ RUN a2enmod rewrite
 RUN apt-get update && apt-get install -y \
     libicu-dev \
     libzip-dev \
+    && docker-php-ext-configure zip \
     && docker-php-ext-install \
     pdo \
     pdo_mysql \
+    mysqli \
     intl \
     zip \
     opcache
+
+# Vérifier les extensions installées
+RUN php -m | grep -E "(pdo|mysql|zip|intl)"
 
 # Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
