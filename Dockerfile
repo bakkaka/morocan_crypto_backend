@@ -1,8 +1,9 @@
 FROM dunglas/frankenphp:php8.5
 
-# Installer les extensions PostgreSQL
+# Installer les dépendances pour intl
 RUN apt-get update && apt-get install -y \
     libpq-dev \
+    libicu-dev \
     && docker-php-ext-install \
     pdo \
     pdo_pgsql \
@@ -24,4 +25,4 @@ RUN composer install --optimize-autoloader --no-scripts --no-interaction
 EXPOSE 8000
 
 # Commande de démarrage
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]git status
