@@ -1,3 +1,4 @@
+# Build version: 2025-12-05-20:40
 FROM php:8.3-fpm
 
 # Installer les dépendances système pour PostgreSQL
@@ -55,12 +56,11 @@ RUN mkdir -p var/cache var/log var/sessions \
     && chown -R www-data:www-data var public \
     && chmod -R 775 var
 
-# Exposer le port (Railway utilise la variable $PORT)
-EXPOSE 8000
+# Exposer le port (Railway utilise automatiquement $PORT = 8080)
+EXPOSE 8080
 
-# Commande de démarrage
-# -t public : définit public/ comme document root (où se trouve index.php)
+# Commande de démarrage avec création automatique du schéma
 CMD php bin/console cache:clear --env=prod --no-debug && \
     php bin/console cache:warmup --env=prod && \
-    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration || true && \
-    php -S 0.0.0.0:${PORT:-8000} -t public
+    php bin/console doctrine:schema:update --force && \
+    php -S 0.0.0.0:$PORT -t public
