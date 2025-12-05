@@ -36,7 +36,7 @@ RUN echo "memory_limit=512M" > /usr/local/etc/php/conf.d/memory.ini \
 # Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Définir le répertoire de travail (racine du projet Symfony)
+# Définir le répertoire de travail
 WORKDIR /app
 
 # Copier composer files
@@ -51,15 +51,15 @@ COPY . .
 # Finaliser l'installation Composer
 RUN composer dump-autoload --optimize --no-dev
 
-# Créer les répertoires nécessaires et définir les permissions
+# Créer les répertoires nécessaires
 RUN mkdir -p var/cache var/log var/sessions \
     && chown -R www-data:www-data var public \
     && chmod -R 775 var
 
-# Exposer le port (Railway utilise automatiquement $PORT = 8080)
+# Exposer le port 8080
 EXPOSE 8080
 
-# Commande de démarrage avec création automatique du schéma
+# Commande de démarrage
 CMD php bin/console cache:clear --env=prod --no-debug && \
     php bin/console cache:warmup --env=prod && \
     php bin/console doctrine:schema:update --force && \
