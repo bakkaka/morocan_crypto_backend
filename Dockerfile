@@ -62,5 +62,5 @@ EXPOSE 8000
 # -t public : définit public/ comme document root (où se trouve index.php)
 CMD php bin/console cache:clear --env=prod --no-debug && \
     php bin/console cache:warmup --env=prod && \
-    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration || true && \
+    php bin/console doctrine:schema:update --force && \
     php -S 0.0.0.0:${PORT:-8000} -t public
