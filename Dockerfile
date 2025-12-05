@@ -63,4 +63,4 @@ EXPOSE 8080
 CMD php bin/console cache:clear --env=prod --no-debug && \
     php bin/console cache:warmup --env=prod && \
     php bin/console doctrine:schema:update --force && \
-    php -S 0.0.0.0:$PORT -t public
+    php -S 0.0.0.0:8080 -t public
