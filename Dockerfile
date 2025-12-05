@@ -1,6 +1,6 @@
 FROM php:8.3-fpm
 
-# Installer les dépendances système
+# Installer les dépendances système pour PostgreSQL
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -12,11 +12,11 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libcurl4-openssl-dev \
     libssl-dev \
+    postgresql-client \
     && docker-php-ext-install \
     pdo \
-    pdo_mysql \
     pdo_pgsql \
-    mysqli \
+    pgsql \
     zip \
     intl \
     opcache \
@@ -62,5 +62,5 @@ EXPOSE 8000
 # -t public : définit public/ comme document root (où se trouve index.php)
 CMD php bin/console cache:clear --env=prod --no-debug && \
     php bin/console cache:warmup --env=prod && \
-    php bin/console doctrine:schema:update --force && \
+    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration || true && \
     php -S 0.0.0.0:${PORT:-8000} -t public
