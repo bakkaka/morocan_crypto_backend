@@ -1,7 +1,6 @@
 <?php
 
 use App\Kernel;
-use Symfony\Component\ErrorHandler\Debug;
 
 // CORS Headers - AJOUTÉ ICI
 header('Access-Control-Allow-Origin: *');
@@ -52,12 +51,6 @@ if (isset($_GET['debug_db'])) {
 // Force production environment for Railway
 $_SERVER['APP_ENV'] = $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'prod';
 $_SERVER['APP_DEBUG'] = $_ENV['APP_DEBUG'] ?? $_SERVER['APP_DEBUG'] ?? '0';
-
-// Activer le debug si besoin
-if ($_SERVER['APP_DEBUG']) {
-    umask(0000);
-    Debug::enable();
-}
 
 require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 
