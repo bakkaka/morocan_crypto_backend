@@ -51,7 +51,7 @@ RUN mkdir -p var/cache var/log var/sessions \
     && chown -R www-data:www-data var public \
     && chmod -R 775 var
 
-#EXPOSE 8080
+EXPOSE $PORT
 
 CMD sh -c "php -S 0.0.0.0:$PORT -t public"
 
