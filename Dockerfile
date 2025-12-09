@@ -43,7 +43,7 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interactio
 # Copier le reste du projet
 COPY . .
 
-# Scripts Symfony (ex : cache:clear)
+# Scripts Symfony
 RUN composer run-script post-install-cmd
 
 # Permissions
@@ -51,7 +51,8 @@ RUN mkdir -p var/cache var/log var/sessions \
     && chown -R www-data:www-data var public \
     && chmod -R 775 var
 
-EXPOSE $PORT
+# EXPOSE avec port fixe (Railway gère le mapping)
+EXPOSE 8080
 
-CMD sh -c "php -S 0.0.0.0:$PORT -t public"
-
+# Commande CORRIGÉE : utiliser ${PORT:-8080}
+CMD ["php", "-S", "0.0.0.0:${PORT:-8080}", "-t", "public"]
