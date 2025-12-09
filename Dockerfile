@@ -1,32 +1,36 @@
-FROM php:8.3-apache
+# Utilisez php:cli au lieu de php:apache
+FROM php:8.3-cli
 
-RUN a2enmod rewrite
-
-# Installer les extensions nécessaires
+# Installer PostgreSQL seulement
 RUN apt-get update && apt-get install -y \
-    libpq-dev libicu-dev libzip-dev zip unzip \
- && docker-php-ext-install pdo pdo_pgsql intl zip
+    libpq-dev \
+    libzip-dev \
+    && docker-php-ext-install \
+    pdo \
+    pdo_pgsql \
+    zip
 
-# Copier Composer depuis l'image officielle
+# Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Définir le dossier de l'application
-WORKDIR /var/www/html
+WORKDIR /app
 
-# Copier tout le projet **avant** composer install
+# Copier composer
+COPY composer.json composer.lock symfony.lock ./
+
+# Installer dépendances
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+
+# Copier tout
 COPY . .
 
-# Installer les dépendances
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Clear cache
+RUN php bin/console cache:clear --env=prod --no-warmup --no-debug
 
-# Donner les droits à Symfony
-RUN mkdir -p var/cache var/log && chmod -R 777 var
+# Permissions
+RUN chmod -R 775 var
 
-# Config Apache pour Symfony
-RUN echo "<Directory /var/www/html/public/> \
-    AllowOverride All \
-</Directory>" > /etc/apache2/conf-available/symfony.conf \
- && a2enconf symfony
+EXPOSE 8080
 
-EXPOSE 80
-CMD ["apache2-foreground"]
+# Utilisez le serveur PHP intégré (plus simple)
+CMD ["php", "-S", "0.0.0.0:8080", "-t", "public"]
