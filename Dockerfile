@@ -53,13 +53,5 @@ RUN mkdir -p var/cache var/log var/sessions \
 
 EXPOSE 8080
 
-# CHOISISSEZ UNE DES TROIS SOLUTIONS CI-DESSOUS :
-
-# Solution 1 (shell format) :
-CMD php -S 0.0.0.0:${PORT:-8080} -t public
-
-# OU Solution 2 (exec format avec sh) :
-# CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
-
-# OU Solution 3 (port fixe) :
-# CMD ["php", "-S", "0.0.0.0:8080", "-t", "public"]
+# UNE SEULE COMMANDE - OPTION A (recommandée)
+CMD php -S 0.0.0.0:8080 -t public
