@@ -1,57 +1,41 @@
-FROM php:8.3-fpm
+FROM php:8.3-apache
 
-# Installer les dépendances système
+# Activer Apache mod_rewrite
+RUN a2enmod rewrite
+
+# Installer PostgreSQL
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    unzip \
+    libpq-dev \
     libzip-dev \
     libicu-dev \
-    libonig-dev \
-    libpq-dev \
-    libxml2-dev \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    postgresql-client \
     && docker-php-ext-install \
     pdo \
     pdo_pgsql \
     pgsql \
     zip \
-    intl \
-    opcache \
-    bcmath \
-    xml \
-    soap \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Vérification extension PDO_PGSQL
-RUN php -r "if (!extension_loaded('pdo_pgsql')) { echo '❌ PDO_PGSQL NOT LOADED'; exit(1); } echo '✅ PDO_PGSQL OK';"
+    intl
 
 # Installer Composer
-COPY --from=composer:2.5 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-WORKDIR /app
+WORKDIR /var/www/html
 
-# Copier Composer files
+# Copier composer
 COPY composer.json composer.lock symfony.lock ./
 
 # Installer dépendances
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Copier le reste du projet
+# Copier tout
 COPY . .
 
 # Scripts Symfony
 RUN composer run-script post-install-cmd
 
-# Permissions
-RUN mkdir -p var/cache var/log var/sessions \
-    && chown -R www-data:www-data var public \
-    && chmod -R 775 var
+# Configurer Apache pour public/
+RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 8080
 
-# SOLUTION RAILWAY OFFICIELLE
-CMD exec php -S 0.0.0.0:$PORT -t public
+# Solution SIMPLE et GARANTIE
+CMD php -S 0.0.0.0:8080 -t public
