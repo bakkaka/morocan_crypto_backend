@@ -89,10 +89,32 @@ class Ad
     #[Groups(['ad:read', 'ad:write', 'ad:detail'])]
     private Collection $acceptedPaymentMethods;
 
+    #[ORM\Column(type: 'float', nullable: true)]
+#[Assert\PositiveOrZero]
+#[Groups(['ad:read', 'ad:write', 'ad:detail'])]
+private ?float $minAmountPerTransaction = null;
+
+#[ORM\Column(type: 'float', nullable: true)]
+#[Assert\Positive]
+#[Groups(['ad:read', 'ad:write', 'ad:detail'])]
+private ?float $maxAmountPerTransaction = null;
+
+#[ORM\Column(type: 'integer')]
+#[Assert\Positive]
+#[Groups(['ad:read', 'ad:write'])]
+private int $timeLimitMinutes = 60; // Durée max pour compléter une transaction
+
+#[ORM\ManyToMany(targetEntity: UserBankDetail::class)]
+#[ORM\JoinTable(name: 'ad_accepted_bank_details')]
+#[Groups(['ad:read', 'ad:detail'])]
+private Collection $acceptedBankDetails;
+
+
     public function __construct()
     {
         $this->transactions = new ArrayCollection();
         $this->acceptedPaymentMethods = new ArrayCollection();
+          $this->acceptedBankDetails = new ArrayCollection(); // ⬅️ NOUVEAU
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -139,4 +161,78 @@ class Ad
         $this->acceptedPaymentMethods->removeElement($method);
         return $this;
     }
+
+    // Dans src/Entity/Ad.php, après les méthodes existantes
+// (Avant le '}' final de la classe)
+
+public function getMinAmountPerTransaction(): ?float
+{
+    return $this->minAmountPerTransaction;
+}
+
+public function setMinAmountPerTransaction(?float $minAmountPerTransaction): static
+{
+    $this->minAmountPerTransaction = $minAmountPerTransaction;
+    $this->updatedAt = new \DateTimeImmutable();
+    return $this;
+}
+
+public function getMaxAmountPerTransaction(): ?float
+{
+    return $this->maxAmountPerTransaction;
+}
+
+public function setMaxAmountPerTransaction(?float $maxAmountPerTransaction): static
+{
+    $this->maxAmountPerTransaction = $maxAmountPerTransaction;
+    $this->updatedAt = new \DateTimeImmutable();
+    return $this;
+}
+
+public function getTimeLimitMinutes(): int
+{
+    return $this->timeLimitMinutes;
+}
+
+public function setTimeLimitMinutes(int $timeLimitMinutes): static
+{
+    $this->timeLimitMinutes = $timeLimitMinutes;
+    $this->updatedAt = new \DateTimeImmutable();
+    return $this;
+}
+
+
+// Getters/setters à ajouter APRÈS les autres méthodes :
+/** @return Collection<int, UserBankDetail> */
+public function getAcceptedBankDetails(): Collection
+{
+    return $this->acceptedBankDetails;
+}
+
+public function addAcceptedBankDetail(UserBankDetail $bankDetail): static
+{
+    if (!$this->acceptedBankDetails->contains($bankDetail)) {
+        $this->acceptedBankDetails->add($bankDetail);
+    }
+    return $this;
+}
+
+public function removeAcceptedBankDetail(UserBankDetail $bankDetail): static
+{
+    $this->acceptedBankDetails->removeElement($bankDetail);
+    return $this;
+}
+
+// Méthode utilitaire : Vérifier si une banque est acceptée
+public function acceptsBank(string $bankName): bool
+{
+    foreach ($this->acceptedBankDetails as $bankDetail) {
+        if ($bankDetail->getBankName() === $bankName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 }

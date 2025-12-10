@@ -142,9 +142,14 @@ private ?\DateTimeInterface $lockedUntil = null;
 #[ORM\Column(type: 'boolean')]
 private bool $isActive = true;
 
+#[ORM\OneToMany(mappedBy: 'user', targetEntity: UserBankDetail::class, cascade: ['persist', 'remove'])]
+#[Groups(['user:detail'])]
+private Collection $bankDetails;
+
 
     public function __construct()
     {
+         $this->bankDetails = new ArrayCollection();
         $this->ads = new ArrayCollection();
         $this->sales = new ArrayCollection();
         $this->purchases = new ArrayCollection();
@@ -497,4 +502,30 @@ public function resetLoginAttempts(): void
     $this->loginAttempts = 0;
     $this->lockedUntil = null;
 }
+
+public function getBankDetails(): Collection
+{
+    return $this->bankDetails;
+}
+
+public function addBankDetail(UserBankDetail $bankDetail): static
+{
+    if (!$this->bankDetails->contains($bankDetail)) {
+        $this->bankDetails->add($bankDetail);
+        $bankDetail->setUser($this);
+    }
+    return $this;
+}
+
+public function removeBankDetail(UserBankDetail $bankDetail): static
+{
+    if ($this->bankDetails->removeElement($bankDetail)) {
+        if ($bankDetail->getUser() === $this) {
+            $bankDetail->setUser(null);
+        }
+    }
+    return $this;
+}
+
+
 }

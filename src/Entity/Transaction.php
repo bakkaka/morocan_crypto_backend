@@ -81,11 +81,30 @@ class Transaction
     #[ORM\Column(nullable: true)]
     #[Groups(['transaction:read'])]
     private ?\DateTimeImmutable $releasedAt = null;
+#[ORM\Column(length: 100, nullable: true)]
+#[Groups(['transaction:read', 'transaction:write'])]
+private ?string $paymentReference = null; // Référence bancaire
 
-    public function __construct()
-    {
-        $this->createdAt = new \DateTimeImmutable();
-    }
+#[ORM\Column(length: 255, nullable: true)]
+#[Groups(['transaction:read', 'transaction:write'])]
+private ?string $paymentProofImage = null; // URL de l'image
+
+#[ORM\Column(nullable: true)]
+#[Groups(['transaction:read'])]
+private ?\DateTimeImmutable $expiresAt = null; // Date d'expiration
+
+// Dans le constructeur, ajouter :
+public function __construct()
+{
+    $this->createdAt = new \DateTimeImmutable();
+    $this->expiresAt = (new \DateTimeImmutable())->modify('+30 minutes');
+}
+
+// Ajouter cette méthode pour vérifier l'expiration
+//public function isExpired(): bool
+//{
+//    return $this->expiresAt && $this->expiresAt < new \DateTimeImmutable();
+//}
 
     public function getId(): ?int { return $this->id; }
 
@@ -112,4 +131,42 @@ class Transaction
     public function setPaidAt(?\DateTimeImmutable $paidAt): static { $this->paidAt = $paidAt; return $this; }
     public function getReleasedAt(): ?\DateTimeImmutable { return $this->releasedAt; }
     public function setReleasedAt(?\DateTimeImmutable $releasedAt): static { $this->releasedAt = $releasedAt; return $this; }
+    public function getPaymentReference(): ?string
+{
+    return $this->paymentReference;
+}
+
+public function setPaymentReference(?string $paymentReference): static
+{
+    $this->paymentReference = $paymentReference;
+    return $this;
+}
+
+public function getPaymentProofImage(): ?string
+{
+    return $this->paymentProofImage;
+}
+
+public function setPaymentProofImage(?string $paymentProofImage): static
+{
+    $this->paymentProofImage = $paymentProofImage;
+    return $this;
+}
+
+public function getExpiresAt(): ?\DateTimeImmutable
+{
+    return $this->expiresAt;
+}
+
+public function setExpiresAt(?\DateTimeImmutable $expiresAt): static
+{
+    $this->expiresAt = $expiresAt;
+    return $this;
+}
+
+public function isExpired(): bool
+{
+    return $this->expiresAt && $this->expiresAt < new \DateTimeImmutable();
+}
+    
 }
