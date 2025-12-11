@@ -9,7 +9,7 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\GetCollection;
-use Doctrine\Common\Collections\ArrayCollection; // ⬅️ IMPORTANT
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;   
 use App\Repository\UserBankDetailRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -18,29 +18,12 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
     operations: [
-        new GetCollection(
-            normalizationContext: ['groups' => ['user_bank_detail:read']],
-            security: "is_granted('ROLE_USER') and object.getUser() == user"
-        ),
-        new Post(
-            denormalizationContext: ['groups' => ['user_bank_detail:write']],
-            security: "is_granted('ROLE_USER')"
-        ),
-        new Get(
-            normalizationContext: ['groups' => ['user_bank_detail:read', 'user_bank_detail:detail']],
-            security: "is_granted('ROLE_USER') and object.getUser() == user"
-        ),
-        new Put(
-            denormalizationContext: ['groups' => ['user_bank_detail:write']],
-            security: "is_granted('ROLE_USER') and object.getUser() == user"
-        ),
-        new Patch(
-            denormalizationContext: ['groups' => ['user_bank_detail:write']],
-            security: "is_granted('ROLE_USER') and object.getUser() == user"
-        ),
-        new Delete(
-            security: "is_granted('ROLE_USER') and object.getUser() == user"
-        )
+        new GetCollection(normalizationContext: ['groups' => ['user_bank_detail:read']]),
+        new Post(denormalizationContext: ['groups' => ['user_bank_detail:write']]),
+        new Get(normalizationContext: ['groups' => ['user_bank_detail:read', 'user_bank_detail:detail']]),
+        new Put(denormalizationContext: ['groups' => ['user_bank_detail:write']]),
+        new Patch(denormalizationContext: ['groups' => ['user_bank_detail:write']]),
+        new Delete()
     ],
     normalizationContext: ['groups' => ['user_bank_detail:read']],
     denormalizationContext: ['groups' => ['user_bank_detail:write']]
@@ -51,7 +34,7 @@ class UserBankDetail
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['user_bank_detail:read', 'user:detail'])]
+    #[Groups(['user_bank_detail:read', 'user:detail', 'ad:detail'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'bankDetails')]
@@ -64,7 +47,7 @@ class UserBankDetail
     #[Assert\NotBlank]
     #[Assert\Choice(['CIH', 'Attijariwafabank', 'Saham Bank', 'BMCE', 'BMCI', 'Crédit du Maroc', 'Banque Populaire'])]
     #[Groups(['user_bank_detail:read', 'user_bank_detail:write', 'ad:detail', 'user:detail'])]
-    private string $bankName = 'CIH'; // Banques marocaines principales
+    private string $bankName = 'CIH';
 
     #[ORM\Column(length: 100)]
     #[Assert\NotBlank]
@@ -76,17 +59,17 @@ class UserBankDetail
     #[Assert\NotBlank]
     #[Assert\Length(min: 10, max: 50)]
     #[Groups(['user_bank_detail:read', 'user_bank_detail:write', 'user:detail'])]
-    private string $accountNumber; // RIB (24 chiffres) ou CCP (10 chiffres)
+    private string $accountNumber;
 
     #[ORM\Column(length: 100, nullable: true)]
     #[Assert\Length(max: 100)]
     #[Groups(['user_bank_detail:read', 'user_bank_detail:write', 'user:detail'])]
-    private ?string $swiftCode = null; // Code SWIFT/BIC
+    private ?string $swiftCode = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255)]
     #[Groups(['user_bank_detail:read', 'user_bank_detail:write', 'user:detail'])]
-    private ?string $branchName = null; // Nom de l'agence
+    private ?string $branchName = null;
 
     #[ORM\Column]
     #[Groups(['user_bank_detail:read'])]
@@ -97,21 +80,21 @@ class UserBankDetail
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column]
-    #[Groups(['user_bank_detail:read'])]
+    #[Groups(['user_bank_detail:read', 'user_bank_detail:write'])]
     private bool $isActive = true;
 
     #[ORM\Column(length: 20, nullable: true)]
     #[Assert\Choice(['current', 'savings', 'professional'])]
     #[Groups(['user_bank_detail:read', 'user_bank_detail:write'])]
-    private ?string $accountType = 'current'; // Type de compte
+    private ?string $accountType = 'current';
 
     #[ORM\ManyToMany(targetEntity: Ad::class, mappedBy: 'acceptedBankDetails')]
-#[Groups(['user_bank_detail:read'])]
-private Collection $adsUsingThisDetail;
+    #[Groups(['user_bank_detail:read'])]
+    private Collection $adsUsingThisDetail;
 
     public function __construct()
     {
-         $this->adsUsingThisDetail = new ArrayCollection(); // ⬅️ AJOUTER
+        $this->adsUsingThisDetail = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -198,9 +181,21 @@ private Collection $adsUsingThisDetail;
         return $this->createdAt;
     }
 
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
     public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+        return $this;
     }
 
     public function isActive(): bool
@@ -227,6 +222,25 @@ private Collection $adsUsingThisDetail;
         return $this;
     }
 
+    public function getAdsUsingThisDetail(): Collection
+    {
+        return $this->adsUsingThisDetail;
+    }
+
+    public function addAdsUsingThisDetail(Ad $adsUsingThisDetail): static
+    {
+        if (!$this->adsUsingThisDetail->contains($adsUsingThisDetail)) {
+            $this->adsUsingThisDetail->add($adsUsingThisDetail);
+        }
+        return $this;
+    }
+
+    public function removeAdsUsingThisDetail(Ad $adsUsingThisDetail): static
+    {
+        $this->adsUsingThisDetail->removeElement($adsUsingThisDetail);
+        return $this;
+    }
+
     // Méthode utilitaire pour afficher un résumé masqué
     public function getMaskedAccountNumber(): string
     {
@@ -235,41 +249,16 @@ private Collection $adsUsingThisDetail;
             return $this->accountNumber;
         }
         
-        $visible = 4; // Montrer les 4 derniers chiffres
+        $visible = 4;
         $mask = str_repeat('*', $length - $visible);
         $lastDigits = substr($this->accountNumber, -$visible);
         
         return $mask . $lastDigits;
     }
 
-    // Validation personnalisée pour les RIB marocains
-    public function isValidMoroccanRIB(): bool
+    // Méthode toString pour affichage
+    public function __toString(): string
     {
-        // Format RIB marocain : 24 chiffres
-        if (strlen($this->accountNumber) !== 24 || !ctype_digit($this->accountNumber)) {
-            return false;
-        }
-
-        // Les 3 premiers chiffres indiquent la banque
-        $bankCode = substr($this->accountNumber, 0, 3);
-        
-        // Codes bancaires marocains connus
-        $moroccanBankCodes = [
-            '002' => 'Attijariwafabank',
-            '003' => 'BMCE Bank',
-            '007' => 'BMCI',
-            '011' => 'Banque Populaire',
-            '014' => 'CIH Bank',
-            '022' => 'Crédit du Maroc',
-            // Ajoutez d'autres codes selon besoin
-        ];
-
-        return isset($moroccanBankCodes[$bankCode]);
+        return $this->bankName . ' - ' . $this->accountHolder . ' (' . $this->getMaskedAccountNumber() . ')';
     }
-
-    /** @return Collection<int, Ad> */
-public function getAdsUsingThisDetail(): Collection
-{
-    return $this->adsUsingThisDetail;
-}
 }
