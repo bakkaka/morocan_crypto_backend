@@ -45,7 +45,7 @@ class Currency
     #[Groups(['currency:read', 'currency:write'])]
     private ?string $name = null; // e.g. Tether USD, Moroccan Dirham
      
-        #[ORM\Column(length: 10)]
+    #[ORM\Column(length: 10)]
     #[Assert\Choice(choices: ['crypto', 'fiat'])]
     #[Groups(['currency:read', 'currency:write', 'ad:detail'])]
     private string $type = 'crypto';
@@ -53,6 +53,15 @@ class Currency
     #[ORM\Column(type: 'integer')]
     #[Groups(['currency:read', 'currency:write'])]
     private int $decimals = 6;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['currency:read'])]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
 
     public function getId(): ?int { return $this->id; }
 
@@ -64,6 +73,10 @@ class Currency
 
     public function getDecimals(): int { return $this->decimals; }
     public function setDecimals(int $d): static { $this->decimals = $d; return $this; }
+    
     public function getType(): string { return $this->type; }
     public function setType(string $type): static { $this->type = $type; return $this; }
+
+    public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static { $this->createdAt = $createdAt; return $this; }
 }
