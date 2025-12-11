@@ -38,10 +38,10 @@ class UserBankDetail
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'bankDetails')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    #[Assert\NotNull]
-    #[Groups(['user_bank_detail:read'])]
-    private ?User $user = null;
+#[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+// #[Assert\NotNull] // ⬅️ SUPPRIMEZ OU COMMENTER CETTE LIGNE
+#[Groups(['user_bank_detail:read', 'user_bank_detail:write'])] // ⬅️ AJOUTEZ 'write' ICI
+private ?User $user = null;
 
     #[ORM\Column(length: 50)]
     #[Assert\NotBlank]
