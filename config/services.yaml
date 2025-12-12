@@ -23,3 +23,8 @@ services:
             $processor: '@api_platform.doctrine.orm.state.persist_processor'
             $passwordHasher: '@security.user_password_hasher'
         tags: [ 'api_platform.state_processor' ]
+    App\EventSubscriber\UserBankDetailSubscriber:
+        tags:
+            - { name: doctrine.event_subscriber }
+        arguments:
+            $security: '@security.helper'

@@ -261,4 +261,13 @@ private ?User $user = null;
     {
         return $this->bankName . ' - ' . $this->accountHolder . ' (' . $this->getMaskedAccountNumber() . ')';
     }
+
+    // Ajoutez cette méthode dans UserBankDetail.php
+public function validateUser(): void
+{
+    if ($this->user === null) {
+        throw new \RuntimeException('Un UserBankDetail doit être associé à un utilisateur.');
+    }
+}
+
 }
