@@ -1,7 +1,27 @@
-# config/packages/api_platform.yaml
 api_platform:
     formats:
         jsonld: ['application/ld+json']
         json: ['application/json']  # Ajoutez cette ligne
     patch_formats:
         json: ['application/merge-patch+json']
+    
+    # ⚠️ AJOUTEZ CETTE SECTION COMPLÈTE :
+    eager_loading:
+        max_joins: 100                     # Augmente de 30 à 100
+        fetch_partial: true                # Ne charge que les champs nécessaires
+        force_eager: false                 # Désactive le chargement automatique
+    
+    # Optionnel mais recommandé :
+    collection:
+        pagination:
+            items_per_page: 30
+            maximum_items_per_page: 100
+    
+    # Pour les performances :
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization']
+        extra_properties:
+            standard_put: true
+            rfc_7807_compliant_errors: true

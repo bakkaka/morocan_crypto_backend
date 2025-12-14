@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20251210214702 extends AbstractMigration
+final class Version20251213185832 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -35,8 +35,9 @@ final class Version20251210214702 extends AbstractMigration
         $this->addSql('CREATE INDEX IDX_FAB3FC162FC0CB0F ON chat_message (transaction_id)');
         $this->addSql('CREATE INDEX IDX_FAB3FC16F624B39D ON chat_message (sender_id)');
         $this->addSql('COMMENT ON COLUMN chat_message.created_at IS \'(DC2Type:datetime_immutable)\'');
-        $this->addSql('CREATE TABLE currency (id SERIAL NOT NULL, code VARCHAR(10) NOT NULL, name VARCHAR(50) NOT NULL, type VARCHAR(10) NOT NULL, decimals INT NOT NULL, PRIMARY KEY(id))');
+        $this->addSql('CREATE TABLE currency (id SERIAL NOT NULL, code VARCHAR(10) NOT NULL, name VARCHAR(50) NOT NULL, type VARCHAR(10) NOT NULL, decimals INT NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_6956883F77153098 ON currency (code)');
+        $this->addSql('COMMENT ON COLUMN currency.created_at IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('CREATE TABLE dispute (id SERIAL NOT NULL, transaction_id INT DEFAULT NULL, opened_by_id INT DEFAULT NULL, reason TEXT NOT NULL, status VARCHAR(20) NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_3C9250072FC0CB0F ON dispute (transaction_id)');
         $this->addSql('CREATE INDEX IDX_3C925007AB159F5 ON dispute (opened_by_id)');

@@ -61,6 +61,10 @@ class WalletMovement
     #[Groups(['wm:read'])]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\ManyToOne(targetEntity: Transaction::class)]
+#[Groups(['wm:read', 'wm:write'])]
+private ?Transaction $transaction = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -81,4 +85,9 @@ class WalletMovement
     public function setDescription(?string $d): static { $this->description = $d; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    public function getTransaction(): ?Transaction { return $this->transaction; }
+public function setTransaction(?Transaction $transaction): static {
+    $this->transaction = $transaction;
+    return $this;
+}
 }
