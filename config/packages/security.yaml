@@ -27,9 +27,16 @@ security:
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
             jwt: ~
 
+    # ⭐⭐ CORRECTION CRITIQUE ICI ⭐⭐
     access_control:
+        # ROUTES PUBLIQUES (DOIVENT ÊTRE EN HAUT)
         - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
         - { path: ^/api/users$, methods: [POST], roles: PUBLIC_ACCESS }
         - { path: ^/api/ads$, methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/api/currencies$, methods: [GET], roles: PUBLIC_ACCESS }
+        
+        # ROUTES PROTÉGÉES SPÉCIFIQUES
         - { path: ^/api/users/me, roles: IS_AUTHENTICATED_FULLY }
+        
+        # TOUT LE RESTE DE L'API EST PROTÉGÉ (DOIT ÊTRE EN DERNIER)
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

@@ -1,15 +1,7 @@
+# config/packages/api_platform.yaml
 api_platform:
-    title: 'Moroccan Crypto API'
-    version: '1.0.0'
-    eager_loading:
-        max_joins: 50
-        fetch_partial: true
-    defaults:
-        eager_loading:
-            enabled: true
-            fetch_partial: true
-            max_joins: 15
-        pagination_client_enabled: true
-        pagination_items_per_page: 30
-        cache_headers:
-            vary: ['Content-Type', 'Authorization', 'Origin']
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']  # Ajoutez cette ligne
+    patch_formats:
+        json: ['application/merge-patch+json']
