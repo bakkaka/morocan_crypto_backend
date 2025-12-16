@@ -38,10 +38,9 @@ class UserBankDetail
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'bankDetails')]
-#[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-// #[Assert\NotNull] // ⬅️ SUPPRIMEZ OU COMMENTER CETTE LIGNE
-#[Groups(['user_bank_detail:read', 'user_bank_detail:write'])] // ⬅️ AJOUTEZ 'write' ICI
-private ?User $user = null;
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['user_bank_detail:read', 'user_bank_detail:write'])]
+    private ?User $user = null;
 
     #[ORM\Column(length: 50)]
     #[Assert\NotBlank]
@@ -99,151 +98,92 @@ private ?User $user = null;
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    // Getters et setters...
 
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
+    public function getId(): ?int { return $this->id; }
 
-    public function setUser(?User $user): static
-    {
+    public function getUser(): ?User { return $this->user; }
+    public function setUser(?User $user): static {
         $this->user = $user;
         $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getBankName(): string
-    {
-        return $this->bankName;
-    }
-
-    public function setBankName(string $bankName): static
-    {
+    public function getBankName(): string { return $this->bankName; }
+    public function setBankName(string $bankName): static {
         $this->bankName = $bankName;
         $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getAccountHolder(): string
-    {
-        return $this->accountHolder;
-    }
-
-    public function setAccountHolder(string $accountHolder): static
-    {
+    public function getAccountHolder(): string { return $this->accountHolder; }
+    public function setAccountHolder(string $accountHolder): static {
         $this->accountHolder = $accountHolder;
         $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getAccountNumber(): string
-    {
-        return $this->accountNumber;
-    }
-
-    public function setAccountNumber(string $accountNumber): static
-    {
+    public function getAccountNumber(): string { return $this->accountNumber; }
+    public function setAccountNumber(string $accountNumber): static {
         $this->accountNumber = $accountNumber;
         $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getSwiftCode(): ?string
-    {
-        return $this->swiftCode;
-    }
-
-    public function setSwiftCode(?string $swiftCode): static
-    {
+    public function getSwiftCode(): ?string { return $this->swiftCode; }
+    public function setSwiftCode(?string $swiftCode): static {
         $this->swiftCode = $swiftCode;
         $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getBranchName(): ?string
-    {
-        return $this->branchName;
-    }
-
-    public function setBranchName(?string $branchName): static
-    {
+    public function getBranchName(): ?string { return $this->branchName; }
+    public function setBranchName(?string $branchName): static {
         $this->branchName = $branchName;
         $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
-    {
+    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static {
         $this->createdAt = $createdAt;
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
-    {
-        return $this->updatedAt;
-    }
-
-    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
-    {
+    public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static {
         $this->updatedAt = $updatedAt;
         return $this;
     }
 
-    public function isActive(): bool
-    {
-        return $this->isActive;
-    }
-
-    public function setIsActive(bool $isActive): static
-    {
+    public function isActive(): bool { return $this->isActive; }
+    public function setIsActive(bool $isActive): static {
         $this->isActive = $isActive;
         $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getAccountType(): ?string
-    {
-        return $this->accountType;
-    }
-
-    public function setAccountType(?string $accountType): static
-    {
+    public function getAccountType(): ?string { return $this->accountType; }
+    public function setAccountType(?string $accountType): static {
         $this->accountType = $accountType;
         $this->updatedAt = new \DateTimeImmutable();
         return $this;
     }
 
-    public function getAdsUsingThisDetail(): Collection
-    {
-        return $this->adsUsingThisDetail;
-    }
-
-    public function addAdsUsingThisDetail(Ad $adsUsingThisDetail): static
-    {
-        if (!$this->adsUsingThisDetail->contains($adsUsingThisDetail)) {
-            $this->adsUsingThisDetail->add($adsUsingThisDetail);
+    /** @return Collection<int, Ad> */
+    public function getAdsUsingThisDetail(): Collection { return $this->adsUsingThisDetail; }
+    public function addAdsUsingThisDetail(Ad $ad): static {
+        if (!$this->adsUsingThisDetail->contains($ad)) {
+            $this->adsUsingThisDetail->add($ad);
         }
         return $this;
     }
-
-    public function removeAdsUsingThisDetail(Ad $adsUsingThisDetail): static
-    {
-        $this->adsUsingThisDetail->removeElement($adsUsingThisDetail);
+    public function removeAdsUsingThisDetail(Ad $ad): static {
+        $this->adsUsingThisDetail->removeElement($ad);
         return $this;
     }
 
-    // Méthode utilitaire pour afficher un résumé masqué
-    public function getMaskedAccountNumber(): string
-    {
+    public function getMaskedAccountNumber(): string {
         $length = strlen($this->accountNumber);
         if ($length <= 4) {
             return $this->accountNumber;
@@ -256,18 +196,13 @@ private ?User $user = null;
         return $mask . $lastDigits;
     }
 
-    // Méthode toString pour affichage
-    public function __toString(): string
-    {
+    public function __toString(): string {
         return $this->bankName . ' - ' . $this->accountHolder . ' (' . $this->getMaskedAccountNumber() . ')';
     }
 
-    // Ajoutez cette méthode dans UserBankDetail.php
-public function validateUser(): void
-{
-    if ($this->user === null) {
-        throw new \RuntimeException('Un UserBankDetail doit être associé à un utilisateur.');
+    public function validateUser(): void {
+        if ($this->user === null) {
+            throw new \RuntimeException('Un UserBankDetail doit être associé à un utilisateur.');
+        }
     }
-}
-
 }

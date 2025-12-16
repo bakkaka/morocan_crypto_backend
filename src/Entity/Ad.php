@@ -41,24 +41,24 @@ class Ad
     #[Assert\NotBlank]
     #[Assert\Choice(choices: ['buy', 'sell'])]
     #[Groups(['ad:read', 'ad:write', 'user:detail'])]
-    private ?string $type = null; // 'buy' or 'sell'
+    private ?string $type = null;
 
     #[ORM\Column(type: 'float')]
     #[Assert\NotBlank]
     #[Assert\Positive]
     #[Groups(['ad:read', 'ad:write', 'ad:detail'])]
-    private ?float $amount = null; // total available USDT
+    private ?float $amount = null;
 
     #[ORM\Column(type: 'float')]
     #[Assert\NotBlank]
     #[Assert\Positive]
     #[Groups(['ad:read', 'ad:write', 'ad:detail'])]
-    private ?float $price = null; // price per USDT in local currency
+    private ?float $price = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
     #[Groups(['ad:read', 'ad:write', 'ad:detail'])]
-    private ?string $paymentMethod = null; // human readable primary method
+    private ?string $paymentMethod = null;
 
     #[ORM\Column(length: 20)]
     #[Assert\Choice(choices: ['active', 'paused', 'completed', 'cancelled'])]
@@ -90,34 +90,35 @@ class Ad
     private Collection $acceptedPaymentMethods;
 
     #[ORM\Column(type: 'float', nullable: true)]
-#[Assert\PositiveOrZero]
-#[Groups(['ad:read', 'ad:write', 'ad:detail'])]
-private ?float $minAmountPerTransaction = null;
+    #[Assert\PositiveOrZero]
+    #[Groups(['ad:read', 'ad:write', 'ad:detail'])]
+    private ?float $minAmountPerTransaction = null;
 
-#[ORM\Column(type: 'float', nullable: true)]
-#[Assert\Positive]
-#[Groups(['ad:read', 'ad:write', 'ad:detail'])]
-private ?float $maxAmountPerTransaction = null;
+    #[ORM\Column(type: 'float', nullable: true)]
+    #[Assert\Positive]
+    #[Groups(['ad:read', 'ad:write', 'ad:detail'])]
+    private ?float $maxAmountPerTransaction = null;
 
-#[ORM\Column(type: 'integer')]
-#[Assert\Positive]
-#[Groups(['ad:read', 'ad:write'])]
-private int $timeLimitMinutes = 60; // Durée max pour compléter une transaction
+    #[ORM\Column(type: 'integer')]
+    #[Assert\Positive]
+    #[Groups(['ad:read', 'ad:write'])]
+    private int $timeLimitMinutes = 60;
 
-#[ORM\ManyToMany(targetEntity: UserBankDetail::class)]
-#[ORM\JoinTable(name: 'ad_accepted_bank_details')]
-#[Groups(['ad:read', 'ad:detail'])]
-private Collection $acceptedBankDetails;
-
+    #[ORM\ManyToMany(targetEntity: UserBankDetail::class, inversedBy: 'adsUsingThisDetail')]
+    #[ORM\JoinTable(name: 'ad_accepted_bank_details')]
+    #[Groups(['ad:read', 'ad:detail'])]
+    private Collection $acceptedBankDetails;
 
     public function __construct()
     {
         $this->transactions = new ArrayCollection();
         $this->acceptedPaymentMethods = new ArrayCollection();
-          $this->acceptedBankDetails = new ArrayCollection(); // ⬅️ NOUVEAU
+        $this->acceptedBankDetails = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
+
+    // Getters et setters...
 
     public function getId(): ?int { return $this->id; }
 
@@ -154,7 +155,9 @@ private Collection $acceptedBankDetails;
     /** @return Collection<int, PaymentMethod> */
     public function getAcceptedPaymentMethods(): Collection { return $this->acceptedPaymentMethods; }
     public function addAcceptedPaymentMethod(PaymentMethod $method): static {
-        if (!$this->acceptedPaymentMethods->contains($method)) $this->acceptedPaymentMethods->add($method);
+        if (!$this->acceptedPaymentMethods->contains($method)) {
+            $this->acceptedPaymentMethods->add($method);
+        }
         return $this;
     }
     public function removeAcceptedPaymentMethod(PaymentMethod $method): static {
@@ -162,77 +165,49 @@ private Collection $acceptedBankDetails;
         return $this;
     }
 
-    // Dans src/Entity/Ad.php, après les méthodes existantes
-// (Avant le '}' final de la classe)
-
-public function getMinAmountPerTransaction(): ?float
-{
-    return $this->minAmountPerTransaction;
-}
-
-public function setMinAmountPerTransaction(?float $minAmountPerTransaction): static
-{
-    $this->minAmountPerTransaction = $minAmountPerTransaction;
-    $this->updatedAt = new \DateTimeImmutable();
-    return $this;
-}
-
-public function getMaxAmountPerTransaction(): ?float
-{
-    return $this->maxAmountPerTransaction;
-}
-
-public function setMaxAmountPerTransaction(?float $maxAmountPerTransaction): static
-{
-    $this->maxAmountPerTransaction = $maxAmountPerTransaction;
-    $this->updatedAt = new \DateTimeImmutable();
-    return $this;
-}
-
-public function getTimeLimitMinutes(): int
-{
-    return $this->timeLimitMinutes;
-}
-
-public function setTimeLimitMinutes(int $timeLimitMinutes): static
-{
-    $this->timeLimitMinutes = $timeLimitMinutes;
-    $this->updatedAt = new \DateTimeImmutable();
-    return $this;
-}
-
-
-// Getters/setters à ajouter APRÈS les autres méthodes :
-/** @return Collection<int, UserBankDetail> */
-public function getAcceptedBankDetails(): Collection
-{
-    return $this->acceptedBankDetails;
-}
-
-public function addAcceptedBankDetail(UserBankDetail $bankDetail): static
-{
-    if (!$this->acceptedBankDetails->contains($bankDetail)) {
-        $this->acceptedBankDetails->add($bankDetail);
+    public function getMinAmountPerTransaction(): ?float { return $this->minAmountPerTransaction; }
+    public function setMinAmountPerTransaction(?float $minAmountPerTransaction): static {
+        $this->minAmountPerTransaction = $minAmountPerTransaction;
+        $this->updatedAt = new \DateTimeImmutable();
+        return $this;
     }
-    return $this;
-}
 
-public function removeAcceptedBankDetail(UserBankDetail $bankDetail): static
-{
-    $this->acceptedBankDetails->removeElement($bankDetail);
-    return $this;
-}
+    public function getMaxAmountPerTransaction(): ?float { return $this->maxAmountPerTransaction; }
+    public function setMaxAmountPerTransaction(?float $maxAmountPerTransaction): static {
+        $this->maxAmountPerTransaction = $maxAmountPerTransaction;
+        $this->updatedAt = new \DateTimeImmutable();
+        return $this;
+    }
 
-// Méthode utilitaire : Vérifier si une banque est acceptée
-public function acceptsBank(string $bankName): bool
-{
-    foreach ($this->acceptedBankDetails as $bankDetail) {
-        if ($bankDetail->getBankName() === $bankName) {
-            return true;
+    public function getTimeLimitMinutes(): int { return $this->timeLimitMinutes; }
+    public function setTimeLimitMinutes(int $timeLimitMinutes): static {
+        $this->timeLimitMinutes = $timeLimitMinutes;
+        $this->updatedAt = new \DateTimeImmutable();
+        return $this;
+    }
+
+    /** @return Collection<int, UserBankDetail> */
+    public function getAcceptedBankDetails(): Collection { return $this->acceptedBankDetails; }
+    public function addAcceptedBankDetail(UserBankDetail $bankDetail): static {
+        if (!$this->acceptedBankDetails->contains($bankDetail)) {
+            $this->acceptedBankDetails->add($bankDetail);
+            $bankDetail->addAdsUsingThisDetail($this);
         }
+        return $this;
     }
-    return false;
-}
+    public function removeAcceptedBankDetail(UserBankDetail $bankDetail): static {
+        if ($this->acceptedBankDetails->removeElement($bankDetail)) {
+            $bankDetail->removeAdsUsingThisDetail($this);
+        }
+        return $this;
+    }
 
-
+    public function acceptsBank(string $bankName): bool {
+        foreach ($this->acceptedBankDetails as $bankDetail) {
+            if ($bankDetail->getBankName() === $bankName) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
