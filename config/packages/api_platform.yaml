@@ -1,7 +1,29 @@
-# config/packages/api_platform.yaml
+# config/packages/api_platform.yaml - VERSION CORRECTE
 api_platform:
+    # Formats
     formats:
         jsonld: ['application/ld+json']
-        json: ['application/json']  # Ajoutez cette ligne
+        json: ['application/json']
+    
     patch_formats:
         json: ['application/merge-patch+json']
+    
+    # ⭐ ESSENTIEL : Configuration Eager Loading
+    eager_loading:
+        enabled: true
+        max_joins: 30
+        fetch_partial: true
+    
+    # ⭐ Configuration de pagination (CORRIGÉ)
+    defaults:
+        pagination_items_per_page: 30  # ⭐ ICI, pas dans collection.pagination
+        pagination_maximum_items_per_page: 100
+    
+    # Configuration du mapping
+    mapping:
+        paths:
+            - '%kernel.project_dir%/src/Entity'
+    
+    # Swagger
+    swagger:
+        versions: [3]
