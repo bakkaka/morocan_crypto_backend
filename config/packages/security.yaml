@@ -15,8 +15,9 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
+        # ⭐ CORRECTION : pattern doit correspondre à check_path
         login:
-            pattern: ^/api/login
+            pattern: ^/api/login_check  # ⭐ CHANGÉ DE ^/api/login
             stateless: true
             json_login:
                 check_path: /api/login_check
@@ -31,7 +32,20 @@ security:
             jwt: ~
 
     access_control:
+        # Routes PUBLIQUES
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
+        - { path: ^/api/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api/health, roles: PUBLIC_ACCESS }
+        - { path: ^/api$, roles: PUBLIC_ACCESS }
         - { path: ^/api/users$, methods: [POST], roles: PUBLIC_ACCESS }
         - { path: ^/api/ads$, methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/api/currencies, methods: [GET], roles: PUBLIC_ACCESS }
+        
+        # Routes PROTÉGÉES
+        - { path: ^/api/users/me, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/transactions, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/wallet, roles: IS_AUTHENTICATED_FULLY }
+        
+        # Par défaut : tout le reste de /api nécessite authentification
+        - { path: ^/api/, roles: IS_AUTHENTICATED_FULLY }
