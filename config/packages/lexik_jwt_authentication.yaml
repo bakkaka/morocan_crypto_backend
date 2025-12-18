@@ -1,24 +1,42 @@
+# config/packages/lexik_jwt_authentication.yaml
 lexik_jwt_authentication:
+    # Clés de chiffrement
     secret_key: '%env(resolve:JWT_SECRET_KEY)%'
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
     
-    # ⭐ IMPORTANT: Configuration du token
-    token_ttl: 3600  # 1 heure
+    # Durée de vie du token
+    token_ttl: 3600  # 1 heure (en secondes)
     
-    # ⭐ Configuration du user identity field
-    user_identity_field: email  # ou 'username' selon votre entité
+    # ⭐ CORRECTION : Utilisez user_id_claim au lieu de user_identity_field
+    user_id_claim: email  # Le champ dans le JWT qui contient l'identifiant utilisateur
     
-    # ⭐ Ajoutez ces lignes
+    # ⭐ IMPORTANT : Configuration des extracteurs de token
     token_extractors:
+        # Extraction depuis le header Authorization
         authorization_header:
             enabled: true
             prefix: Bearer
             name: Authorization
         
+        # Extraction depuis un cookie (désactivé par défaut)
         cookie:
             enabled: false
+            name: BEARER
         
+        # Extraction depuis un paramètre de query string
         query_parameter:
             enabled: false
             name: bearer
+    
+    # Configuration pour API Platform
+    api_platform:
+        enabled: true
+        check_path: /api/login_check
+        username_path: email
+        password_path: password
+    
+    # ⭐ AJOUTEZ cette configuration si vous avez la version 2.19+
+    encoder:
+        # Service d'encodage par défaut
+        service: lexik_jwt_authentication.encoder.lcobucci

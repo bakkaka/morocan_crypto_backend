@@ -1,29 +1,24 @@
-# config/packages/api_platform.yaml - VERSION CORRECTE
+# config/packages/api_platform.yaml
 api_platform:
-    # Formats
+    title: 'Moroccan Crypto API'
+    version: '1.0.0'
+    enable_docs: true
+    
+    # DÉSACTIVEZ l'eager loading problématique
+    eager_loading:
+        enabled: false  # ← DÉSACTIVEZ
+    
+    # Formats supportés
     formats:
         jsonld: ['application/ld+json']
         json: ['application/json']
+        html: ['text/html']
     
-    patch_formats:
-        json: ['application/merge-patch+json']
-    
-    # ⭐ ESSENTIEL : Configuration Eager Loading
-    eager_loading:
-        enabled: true
-        max_joins: 30
-        fetch_partial: true
-    
-    # ⭐ Configuration de pagination (CORRIGÉ)
+    # Pour les operations spécifiques
     defaults:
-        pagination_items_per_page: 30  # ⭐ ICI, pas dans collection.pagination
-        pagination_maximum_items_per_page: 100
-    
-    # Configuration du mapping
-    mapping:
-        paths:
-            - '%kernel.project_dir%/src/Entity'
-    
-    # Swagger
-    swagger:
-        versions: [3]
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+        extra_properties:
+            standard_put: true
+            rfc_7807_compliant_errors: true

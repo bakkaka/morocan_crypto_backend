@@ -8,30 +8,29 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route('/api/users')]
-class UserMeController extends AbstractController
+#[Route('/api/auth')]
+class AuthMeController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $entityManager
     ) {}
     
-    #[Route('/me', name: 'api_users_me', methods: ['GET'])]
+    #[Route('/me', name: 'api_auth_me', methods: ['GET'])]
     public function me(): JsonResponse
     {
         $user = $this->getUser();
         
         if (!$user || !$user instanceof User) {
-            return $this->json(['message' => 'Unauthorized'], 401);
+            return $this->json(['message' => 'Unauthorized', 'code' => 401], 401);
         }
         
-        // SIMPLE: Recharger l'User sans les relations
+        // Charger l'User SANS les relations ApiPlatform
         $simpleUser = $this->entityManager->getRepository(User::class)->find($user->getId());
         
         if (!$simpleUser) {
-            return $this->json(['message' => 'User not found'], 404);
+            return $this->json(['message' => 'User not found', 'code' => 404], 404);
         }
 
-        // Retourner les données de base (sans les relations complexes)
         return $this->json([
             'id' => $simpleUser->getId(),
             'email' => $simpleUser->getEmail(),
