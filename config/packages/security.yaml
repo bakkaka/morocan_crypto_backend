@@ -15,25 +15,22 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        # ⭐ CORRECTION : pattern doit correspondre à check_path
-        login:
-            pattern: ^/api/login_check  # ⭐ CHANGÉ DE ^/api/login
+        # ⭐ CORRECTION : UN SEUL FIREWALL POUR TOUTE L'API
+        api:
+            pattern: ^/api/
             stateless: true
+            # ⭐ AJOUTEZ json_login DANS LE MÊME FIREWALL QUE jwt
             json_login:
                 check_path: /api/login_check
                 username_path: email
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
-
-        api:
-            pattern: ^/api
-            stateless: true
+            # ⭐ JWT DOIT ÊTRE APRÈS json_login
             jwt: ~
 
     access_control:
         # Routes PUBLIQUES
-        - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/health, roles: PUBLIC_ACCESS }
