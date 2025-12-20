@@ -78,8 +78,9 @@ class Ad
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'ads')]
-    #[Groups(['ad:read', 'ad:detail'])]
-    private ?User $user = null;
+   #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')] // ← AJOUTER CETTE LIGNE
+   #[Groups(['ad:read', 'ad:detail', 'ad:write'])]
+   private ?User $user = null;
 
     #[ORM\OneToMany(mappedBy: 'ad', targetEntity: Transaction::class)]
     #[Groups(['ad:detail'])]

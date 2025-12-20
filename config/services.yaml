@@ -31,3 +31,8 @@ services:
     App\EventListener\JWTCreatedListener:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
+    App\EventSubscriber\AdUserSubscriber:
+        tags:
+            - { name: kernel.event_subscriber }
+        arguments:
+            $security: '@security.helper' # ou '@security.helper' selon votre version
