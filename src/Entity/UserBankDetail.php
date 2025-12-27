@@ -18,12 +18,30 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
     operations: [
-        new GetCollection(normalizationContext: ['groups' => ['user_bank_detail:read']]),
-        new Post(denormalizationContext: ['groups' => ['user_bank_detail:write']]),
-        new Get(normalizationContext: ['groups' => ['user_bank_detail:read', 'user_bank_detail:detail']]),
-        new Put(denormalizationContext: ['groups' => ['user_bank_detail:write']]),
-        new Patch(denormalizationContext: ['groups' => ['user_bank_detail:write']]),
-        new Delete()
+        new GetCollection(
+            normalizationContext: ['groups' => ['user_bank_detail:read']],
+            security: "is_granted('ROLE_USER')",
+            // ApiPlatform filtrera automatiquement si vous utilisez un Extension
+        ),
+        new Post(
+            denormalizationContext: ['groups' => ['user_bank_detail:write']],
+            security: "is_granted('ROLE_USER')"
+        ),
+        new Get(
+            normalizationContext: ['groups' => ['user_bank_detail:read', 'user_bank_detail:detail']],
+            security: "is_granted('ROLE_USER') and object.user == user" // ✅ Correct ici
+        ),
+        new Put(
+            denormalizationContext: ['groups' => ['user_bank_detail:write']],
+            security: "is_granted('ROLE_USER') and object.user == user" // ✅
+        ),
+        new Patch(
+            denormalizationContext: ['groups' => ['user_bank_detail:write']],
+            security: "is_granted('ROLE_USER') and object.user == user" // ✅
+        ),
+        new Delete(
+            security: "is_granted('ROLE_USER') and object.user == user" // ✅
+        )
     ],
     normalizationContext: ['groups' => ['user_bank_detail:read']],
     denormalizationContext: ['groups' => ['user_bank_detail:write']]
@@ -37,8 +55,12 @@ class UserBankDetail
     #[Groups(['user_bank_detail:read', 'user:detail', 'ad:detail'])]
     private ?int $id = null;
 
+    // ==============================
+    // RELATION AVEC USER (CORRIGÉ)
+    // ==============================
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'bankDetails')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[Assert\NotNull]
     #[Groups(['user_bank_detail:read', 'user_bank_detail:write'])]
     private ?User $user = null;
 
@@ -102,6 +124,7 @@ class UserBankDetail
 
     public function getId(): ?int { return $this->id; }
 
+    // USER - CORRECTION IMPORTANTE
     public function getUser(): ?User { return $this->user; }
     public function setUser(?User $user): static {
         $this->user = $user;
@@ -175,11 +198,14 @@ class UserBankDetail
     public function addAdsUsingThisDetail(Ad $ad): static {
         if (!$this->adsUsingThisDetail->contains($ad)) {
             $this->adsUsingThisDetail->add($ad);
+            $ad->addAcceptedBankDetail($this);
         }
         return $this;
     }
     public function removeAdsUsingThisDetail(Ad $ad): static {
-        $this->adsUsingThisDetail->removeElement($ad);
+        if ($this->adsUsingThisDetail->removeElement($ad)) {
+            $ad->removeAcceptedBankDetail($this);
+        }
         return $this;
     }
 
@@ -204,5 +230,21 @@ class UserBankDetail
         if ($this->user === null) {
             throw new \RuntimeException('Un UserBankDetail doit être associé à un utilisateur.');
         }
+    }
+
+    // ==============================
+    // MÉTHODES DE SÉCURITÉ
+    // ==============================
+    
+    public function belongsToUser(User $user): bool {
+        return $this->user && $this->user->getId() === $user->getId();
+    }
+    
+    public function canBeViewedBy(User $user): bool {
+        return $this->belongsToUser($user) || $user->hasRole('ROLE_ADMIN');
+    }
+    
+    public function canBeEditedBy(User $user): bool {
+        return $this->belongsToUser($user);
     }
 }
