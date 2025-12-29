@@ -38,19 +38,19 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
             normalizationContext: ['groups' => ['user:read', 'user:detail']]
         ),
         new Put(
-            security: 'is_granted("PUBLIC_ACCESS")',
+            security: 'is_granted("ROLE_ADMIN")', // ← MODIFIÉ: Seulement pour les admins
             processor: UserPasswordHasherProcessor::class,
-            denormalizationContext: ['groups' => ['user:update']],
+            denormalizationContext: ['groups' => ['user:update', 'user:admin:write']], // ← AJOUTÉ
             normalizationContext: ['groups' => ['user:read']]
         ),
         new Patch(
-            security: 'is_granted("PUBLIC_ACCESS")',
+            security: 'is_granted("ROLE_ADMIN")', // ← MODIFIÉ: Seulement pour les admins
             processor: UserPasswordHasherProcessor::class,
-            denormalizationContext: ['groups' => ['user:update']],
+            denormalizationContext: ['groups' => ['user:update', 'user:admin:write']], // ← AJOUTÉ
             normalizationContext: ['groups' => ['user:read']]
         ),
         new Delete(
-            security: 'is_granted("PUBLIC_ACCESS")'
+            security: 'is_granted("ROLE_ADMIN")' // ← MODIFIÉ: Seulement pour les admins
         )
     ],
     normalizationContext: ['groups' => ['user:read']],
@@ -58,6 +58,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 )]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
+#[ORM\HasLifecycleCallbacks]
 #[UniqueEntity('email', message: 'Cet email est déjà utilisé.')]
 #[UniqueEntity('phone', message: 'Ce numéro de téléphone est déjà utilisé.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -94,11 +95,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $phone = null;
 
     #[ORM\Column]
-    #[Groups(['user:read', 'user:detail'])]
+    #[Groups(['user:read', 'user:detail', 'user:admin:write'])] // ← AJOUTÉ 'user:admin:write'
     private bool $isVerified = false;
 
     #[ORM\Column(type: 'float')]
-    #[Groups(['user:read', 'user:detail', 'ad:read'])]
+    #[Groups(['user:read', 'user:detail', 'user:admin:write'])] // ← AJOUTÉ 'user:admin:write'
     private float $reputation = 5.0;
 
     #[ORM\Column]
@@ -109,13 +110,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:detail'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    // Dans la propriété $roles, ajoutez cette ligne #[Groups] :
-#[ORM\Column(type: 'json')]
-#[Groups(['user:read', 'user:detail'])] // AJOUT: Permet la sérialisation des rôles
-private array $roles = [];
+    #[ORM\Column(type: 'json')]
+    #[Groups(['user:read', 'user:detail', 'user:admin:write'])] // ← MODIFIÉ: Ajout de 'user:admin:write'
+    private array $roles = [];
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:read', 'user:detail'])]
+    #[Groups(['user:read', 'user:detail', 'user:admin:write'])] // ← AJOUTÉ 'user:admin:write'
     private ?string $walletAddress = null;
 
     // Relations
@@ -142,6 +142,7 @@ private array $roles = [];
     private ?\DateTimeInterface $lockedUntil = null;
 
     #[ORM\Column(type: 'boolean')]
+    #[Groups(['user:read', 'user:detail', 'user:admin:write'])] // ← AJOUTÉ 'user:admin:write'
     private bool $isActive = true;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserBankDetail::class, cascade: ['persist', 'remove'])]
@@ -160,6 +161,7 @@ private array $roles = [];
         $this->isVerified = false;
         $this->reputation = 5.0;
         $this->roles = ['ROLE_USER'];
+        $this->isActive = true;
     }
 
     public function getId(): ?int
@@ -286,22 +288,76 @@ private array $roles = [];
     public function getRoles(): array
     {
         $roles = $this->roles;
-        $roles[] = 'ROLE_USER';
-
+        // Garantir que ROLE_USER est toujours présent
+        if (!in_array('ROLE_USER', $roles, true)) {
+            $roles[] = 'ROLE_USER';
+        }
         return array_unique($roles);
     }
 
     public function setRoles(array $roles): static
     {
+        // Nettoyer et valider les rôles
+        $roles = array_map('strtoupper', $roles);
+        $roles = array_unique($roles);
+        
+        // S'assurer que ROLE_USER est toujours présent
+        if (!in_array('ROLE_USER', $roles, true)) {
+            $roles[] = 'ROLE_USER';
+        }
+        
         $this->roles = $roles;
         return $this;
     }
      
     #[Groups(['user:read', 'user:detail'])]
     public function getStoredRoles(): array
-     {
-          return $this->roles;
-       }
+    {
+        return $this->roles;
+    }
+
+    /**
+     * Vérifie si l'utilisateur a un rôle spécifique
+     */
+    #[Groups(['user:read', 'user:detail'])]
+    public function hasRole(string $role): bool
+    {
+        return in_array(strtoupper($role), $this->getRoles(), true);
+    }
+
+    /**
+     * Ajoute un rôle à l'utilisateur
+     */
+    public function addRole(string $role): static
+    {
+        $role = strtoupper($role);
+        if (!in_array($role, $this->roles, true)) {
+            $this->roles[] = $role;
+        }
+        return $this;
+    }
+
+    /**
+     * Retire un rôle de l'utilisateur
+     */
+    public function removeRole(string $role): static
+    {
+        $role = strtoupper($role);
+        $this->roles = array_filter($this->roles, function($r) use ($role) {
+            return $r !== $role;
+        });
+        
+        // Réindexer le tableau
+        $this->roles = array_values($this->roles);
+        
+        // S'assurer qu'il reste au moins ROLE_USER
+        if (!in_array('ROLE_USER', $this->roles, true)) {
+            $this->roles[] = 'ROLE_USER';
+        }
+        
+        return $this;
+    }
+
     /**
      * @see UserInterface
      */
@@ -475,14 +531,24 @@ private array $roles = [];
         return $this->fullName . ' (' . $this->email . ')';
     }
 
-    public function getLockedUntil(): ?\DateTimeInterface { return $this->lockedUntil; }
-    public function setLockedUntil(?\DateTimeInterface $lockedUntil): static { 
+    public function getLockedUntil(): ?\DateTimeInterface 
+    { 
+        return $this->lockedUntil; 
+    }
+    
+    public function setLockedUntil(?\DateTimeInterface $lockedUntil): static 
+    { 
         $this->lockedUntil = $lockedUntil; 
         return $this; 
     }
 
-    public function isActive(): bool { return $this->isActive; }
-    public function setIsActive(bool $isActive): static { 
+    public function isActive(): bool 
+    { 
+        return $this->isActive; 
+    }
+    
+    public function setIsActive(bool $isActive): static 
+    { 
         $this->isActive = $isActive; 
         return $this; 
     }
@@ -534,11 +600,78 @@ private array $roles = [];
     }
 
     // ============================================
-    // MÉTHODE AJOUTÉE POUR LA MODÉRATION
+    // MÉTHODES AJOUTÉES POUR LA GESTION ADMIN
     // ============================================
 
-    public function hasRole(string $role): bool
+    /**
+     * Vérifie si l'utilisateur est administrateur
+     */
+    #[Groups(['user:read', 'user:detail'])]
+    public function isAdmin(): bool
     {
-        return in_array($role, $this->getRoles(), true);
+        return $this->hasRole('ROLE_ADMIN');
+    }
+
+    /**
+     * Vérifie si l'utilisateur est super administrateur
+     */
+    #[Groups(['user:read', 'user:detail'])]
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('ROLE_SUPER_ADMIN');
+    }
+
+    /**
+     * Méthode pour promouvoir un utilisateur en admin
+     */
+    public function promoteToAdmin(): static
+    {
+        return $this->addRole('ROLE_ADMIN');
+    }
+
+    /**
+     * Méthode pour rétrograder un admin en utilisateur normal
+     */
+    public function demoteFromAdmin(): static
+    {
+        return $this->removeRole('ROLE_ADMIN');
+    }
+
+    /**
+     * Active le compte utilisateur
+     */
+    public function activate(): static
+    {
+        $this->isActive = true;
+        $this->resetLoginAttempts();
+        return $this;
+    }
+
+    /**
+     * Désactive le compte utilisateur
+     */
+    public function deactivate(): static
+    {
+        $this->isActive = false;
+        return $this;
+    }
+
+    /**
+     * Vérifie si l'utilisateur peut être modifié par un autre utilisateur
+     */
+    public function canBeModifiedBy(User $modifier): bool
+    {
+        // Un super admin peut modifier tout le monde
+        if ($modifier->isSuperAdmin()) {
+            return true;
+        }
+        
+        // Un admin ne peut pas modifier un super admin ou un autre admin
+        if ($modifier->isAdmin()) {
+            return !$this->isSuperAdmin() && !$this->isAdmin();
+        }
+        
+        // Un utilisateur normal ne peut modifier que son propre compte
+        return $this->getId() === $modifier->getId();
     }
 }
