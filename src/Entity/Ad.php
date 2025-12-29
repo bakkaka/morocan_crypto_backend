@@ -31,6 +31,17 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\Entity(repositoryClass: AdRepository::class)]
 class Ad
 {
+    // ============================================
+    // CONSTANTES DE STATUT POUR LA MODÉRATION
+    // ============================================
+    public const STATUS_PENDING = 'pending';      // En attente admin
+    public const STATUS_APPROVED = 'approved';    // Approuvé par admin
+    public const STATUS_PUBLISHED = 'published';  // Publié (visible public)
+    public const STATUS_PAUSED = 'paused';        // En pause
+    public const STATUS_REJECTED = 'rejected';    // Rejeté par admin
+    public const STATUS_COMPLETED = 'completed';  // Transaction terminée
+    public const STATUS_CANCELLED = 'cancelled';  // Annulé par utilisateur
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -61,9 +72,17 @@ class Ad
     private ?string $paymentMethod = null;
 
     #[ORM\Column(length: 20)]
-    #[Assert\Choice(choices: ['active', 'paused', 'completed', 'cancelled'])]
-    #[Groups(['ad:read', 'ad:write'])]
-    private string $status = 'active';
+    #[Assert\Choice([
+        self::STATUS_PENDING,
+        self::STATUS_APPROVED, 
+        self::STATUS_PUBLISHED,
+        self::STATUS_PAUSED,
+        self::STATUS_REJECTED,
+        self::STATUS_COMPLETED,
+        self::STATUS_CANCELLED
+    ])]
+    #[Groups(['ad:read', 'ad:write', 'admin:read'])]
+    private string $status = self::STATUS_PENDING;
 
     #[ORM\ManyToOne(targetEntity: Currency::class)]
     #[Groups(['ad:read', 'ad:write', 'ad:detail'])]
@@ -78,9 +97,9 @@ class Ad
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'ads')]
-   #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')] // ← AJOUTER CETTE LIGNE
-   #[Groups(['ad:read', 'ad:detail', 'ad:write'])]
-   private ?User $user = null;
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    #[Groups(['ad:read', 'ad:detail', 'ad:write'])]
+    private ?User $user = null;
 
     #[ORM\OneToMany(mappedBy: 'ad', targetEntity: Transaction::class)]
     #[Groups(['ad:detail'])]
@@ -110,6 +129,25 @@ class Ad
     #[Groups(['ad:read', 'ad:detail'])]
     private Collection $acceptedBankDetails;
 
+    // ============================================
+    // CHAMPS POUR LA MODÉRATION (NOUVEAUX)
+    // ============================================
+    #[ORM\Column(nullable: true)]
+    #[Groups(['ad:read', 'admin:read'])]
+    private ?\DateTimeImmutable $approvedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['ad:read', 'admin:read'])]
+    private ?\DateTimeImmutable $publishedAt = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['admin:read'])]
+    private ?string $adminNotes = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[Groups(['admin:read'])]
+    private ?User $approvedBy = null;
+
     public function __construct()
     {
         $this->transactions = new ArrayCollection();
@@ -117,9 +155,12 @@ class Ad
         $this->acceptedBankDetails = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->status = self::STATUS_PENDING;
     }
 
-    // Getters et setters...
+    // ============================================
+    // GETTERS ET SETTERS EXISTANTS
+    // ============================================
 
     public function getId(): ?int { return $this->id; }
 
@@ -136,7 +177,11 @@ class Ad
     public function setPaymentMethod(string $pm): static { $this->paymentMethod = $pm; return $this; }
 
     public function getStatus(): string { return $this->status; }
-    public function setStatus(string $status): static { $this->status = $status; return $this; }
+    public function setStatus(string $status): static { 
+        $this->status = $status; 
+        $this->updatedAt = new \DateTimeImmutable();
+        return $this; 
+    }
 
     public function getCurrency(): ?Currency { return $this->currency; }
     public function setCurrency(?Currency $currency): static { $this->currency = $currency; return $this; }
@@ -210,5 +255,119 @@ class Ad
             }
         }
         return false;
+    }
+
+    // ============================================
+    // GETTERS POUR LES NOUVEAUX CHAMPS
+    // ============================================
+
+    public function getApprovedAt(): ?\DateTimeImmutable { return $this->approvedAt; }
+    public function setApprovedAt(?\DateTimeImmutable $approvedAt): static { 
+        $this->approvedAt = $approvedAt; 
+        return $this; 
+    }
+
+    public function getPublishedAt(): ?\DateTimeImmutable { return $this->publishedAt; }
+    public function setPublishedAt(?\DateTimeImmutable $publishedAt): static { 
+        $this->publishedAt = $publishedAt; 
+        return $this; 
+    }
+
+    public function getAdminNotes(): ?string { return $this->adminNotes; }
+    public function setAdminNotes(?string $adminNotes): static { 
+        $this->adminNotes = $adminNotes; 
+        return $this; 
+    }
+
+    public function getApprovedBy(): ?User { return $this->approvedBy; }
+    public function setApprovedBy(?User $approvedBy): static { 
+        $this->approvedBy = $approvedBy; 
+        return $this; 
+    }
+
+    // ============================================
+    // MÉTHODES POUR LA MODÉRATION (NOUVELLES)
+    // ============================================
+
+    #[Groups(['ad:read'])]
+    public function isNew(): bool
+    {
+        $now = new \DateTimeImmutable();
+        $publishedTime = $this->publishedAt ?? $this->createdAt;
+        $diff = $now->diff($publishedTime);
+        
+        return $this->status === self::STATUS_PUBLISHED 
+            && $diff->days === 0 
+            && $diff->h < 24;
+    }
+
+    public function getHoursSinceCreation(): int
+    {
+        $now = new \DateTimeImmutable();
+        $diff = $now->diff($this->createdAt);
+        return ($diff->days * 24) + $diff->h;
+    }
+
+    public function getHoursSinceApproval(): ?int
+    {
+        if (!$this->approvedAt) return null;
+        
+        $now = new \DateTimeImmutable();
+        $diff = $now->diff($this->approvedAt);
+        return ($diff->days * 24) + $diff->h;
+    }
+
+    public function approve(?User $admin = null, ?string $notes = null): void
+    {
+        $this->status = self::STATUS_APPROVED;
+        $this->approvedAt = new \DateTimeImmutable();
+        $this->approvedBy = $admin;
+        $this->adminNotes = $notes;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function publish(): void
+    {
+        $this->status = self::STATUS_PUBLISHED;
+        $this->publishedAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function reject(?string $notes = null): void
+    {
+        $this->status = self::STATUS_REJECTED;
+        $this->adminNotes = $notes;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function pause(): void
+    {
+        $this->status = self::STATUS_PAUSED;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function resume(): void
+    {
+        if ($this->publishedAt) {
+            $this->status = self::STATUS_PUBLISHED;
+        } else {
+            $this->status = self::STATUS_APPROVED;
+        }
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    #[Groups(['ad:read'])]
+    public function getStatusLabel(): string
+    {
+        return match($this->status) {
+            self::STATUS_PENDING => 'En attente',
+            self::STATUS_APPROVED => 'Approuvé',
+            self::STATUS_PUBLISHED => 'Publié',
+            self::STATUS_PAUSED => 'En pause',
+            self::STATUS_REJECTED => 'Rejeté',
+            self::STATUS_COMPLETED => 'Terminé',
+            self::STATUS_CANCELLED => 'Annulé',
+            default => $this->status,
+        };
     }
 }

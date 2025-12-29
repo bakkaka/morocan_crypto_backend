@@ -16,7 +16,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
     operations: [
-        new GetCollection(normalizationContext: ['groups' => ['chat:read']]),
+        new GetCollection(
+    normalizationContext: ['groups' => ['chat:read']],
+    security: "is_granted('ROLE_USER')", // ✅ Simple security ici
+),
         new Post(denormalizationContext: ['groups' => ['chat:write']]),
         new Get(normalizationContext: ['groups' => ['chat:read', 'chat:detail']]),
         new Put(denormalizationContext: ['groups' => ['chat:write']]),

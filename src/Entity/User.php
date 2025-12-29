@@ -109,8 +109,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:detail'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\Column(type: 'json')]
-    private array $roles = [];
+    // Dans la propriété $roles, ajoutez cette ligne #[Groups] :
+#[ORM\Column(type: 'json')]
+#[Groups(['user:read', 'user:detail'])] // AJOUT: Permet la sérialisation des rôles
+private array $roles = [];
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['user:read', 'user:detail'])]
@@ -134,22 +136,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $paymentMethods;
 
     #[ORM\Column(type: 'integer')]
-private int $loginAttempts = 0;
+    private int $loginAttempts = 0;
 
-#[ORM\Column(type: 'datetime', nullable: true)]
-private ?\DateTimeInterface $lockedUntil = null;
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $lockedUntil = null;
 
-#[ORM\Column(type: 'boolean')]
-private bool $isActive = true;
+    #[ORM\Column(type: 'boolean')]
+    private bool $isActive = true;
 
-#[ORM\OneToMany(mappedBy: 'user', targetEntity: UserBankDetail::class, cascade: ['persist', 'remove'])]
-#[Groups(['user:detail'])]
-private Collection $bankDetails;
-
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserBankDetail::class, cascade: ['persist', 'remove'])]
+    #[Groups(['user:detail'])]
+    private Collection $bankDetails;
 
     public function __construct()
     {
-         $this->bankDetails = new ArrayCollection();
+        $this->bankDetails = new ArrayCollection();
         $this->ads = new ArrayCollection();
         $this->sales = new ArrayCollection();
         $this->purchases = new ArrayCollection();
@@ -295,7 +296,12 @@ private Collection $bankDetails;
         $this->roles = $roles;
         return $this;
     }
-
+     
+    #[Groups(['user:read', 'user:detail'])]
+    public function getStoredRoles(): array
+     {
+          return $this->roles;
+       }
     /**
      * @see UserInterface
      */
@@ -470,62 +476,69 @@ private Collection $bankDetails;
     }
 
     public function getLockedUntil(): ?\DateTimeInterface { return $this->lockedUntil; }
-public function setLockedUntil(?\DateTimeInterface $lockedUntil): static { 
-    $this->lockedUntil = $lockedUntil; 
-    return $this; 
-}
-
-public function isActive(): bool { return $this->isActive; }
-public function setIsActive(bool $isActive): static { 
-    $this->isActive = $isActive; 
-    return $this; 
-}
-
-public function isAccountLocked(): bool
-{
-    if (!$this->lockedUntil) {
-        return false;
+    public function setLockedUntil(?\DateTimeInterface $lockedUntil): static { 
+        $this->lockedUntil = $lockedUntil; 
+        return $this; 
     }
-    return new \DateTime() < $this->lockedUntil;
-}
 
-public function incrementLoginAttempts(): void
-{
-    $this->loginAttempts++;
-    if ($this->loginAttempts >= 5) {
-        $this->lockedUntil = (new \DateTime())->modify('+30 minutes');
+    public function isActive(): bool { return $this->isActive; }
+    public function setIsActive(bool $isActive): static { 
+        $this->isActive = $isActive; 
+        return $this; 
     }
-}
 
-public function resetLoginAttempts(): void
-{
-    $this->loginAttempts = 0;
-    $this->lockedUntil = null;
-}
-
-public function getBankDetails(): Collection
-{
-    return $this->bankDetails;
-}
-
-public function addBankDetail(UserBankDetail $bankDetail): static
-{
-    if (!$this->bankDetails->contains($bankDetail)) {
-        $this->bankDetails->add($bankDetail);
-        $bankDetail->setUser($this);
+    public function isAccountLocked(): bool
+    {
+        if (!$this->lockedUntil) {
+            return false;
+        }
+        return new \DateTime() < $this->lockedUntil;
     }
-    return $this;
-}
 
-public function removeBankDetail(UserBankDetail $bankDetail): static
-{
-    if ($this->bankDetails->removeElement($bankDetail)) {
-        if ($bankDetail->getUser() === $this) {
-            $bankDetail->setUser(null);
+    public function incrementLoginAttempts(): void
+    {
+        $this->loginAttempts++;
+        if ($this->loginAttempts >= 5) {
+            $this->lockedUntil = (new \DateTime())->modify('+30 minutes');
         }
     }
-    return $this;
-}
 
+    public function resetLoginAttempts(): void
+    {
+        $this->loginAttempts = 0;
+        $this->lockedUntil = null;
+    }
 
+    public function getBankDetails(): Collection
+    {
+        return $this->bankDetails;
+    }
+
+    public function addBankDetail(UserBankDetail $bankDetail): static
+    {
+        if (!$this->bankDetails->contains($bankDetail)) {
+            $this->bankDetails->add($bankDetail);
+            $bankDetail->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeBankDetail(UserBankDetail $bankDetail): static
+    {
+        if ($this->bankDetails->removeElement($bankDetail)) {
+            if ($bankDetail->getUser() === $this) {
+                $bankDetail->setUser(null);
+            }
+        }
+        return $this;
+    }
+
+    // ============================================
+    // MÉTHODE AJOUTÉE POUR LA MODÉRATION
+    // ============================================
+
+    public function hasRole(string $role): bool
+    {
+        return in_array($role, $this->getRoles(), true);
+    }
 }

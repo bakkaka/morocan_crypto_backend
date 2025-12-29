@@ -36,3 +36,7 @@ services:
             - { name: kernel.event_subscriber }
         arguments:
             $security: '@security.helper' # ou '@security.helper' selon votre version
+            
+    App\Doctrine\CurrentUserExtension:
+        tags:
+            - { name: api_platform.doctrine.orm.query_extension.collection }
